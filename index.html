@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PCA for Image Compression — Homework 2</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --panel: #ffffff;
+    --text: #1f2430;
+    --muted: #5b6472;
+    --accent: #2563eb;
+    --border: #e4e7ec;
+    --code-bg: #1e2230;
+    --code-text: #e6e9ef;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  header {
+    padding: 3rem 1.5rem 2rem;
+    text-align: center;
+    background: linear-gradient(180deg, #eef2ff 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { margin: 0 0 .5rem; font-size: 2rem; }
+  header p { margin: 0; color: var(--muted); }
+  main { max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  section.panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.75rem 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 2px rgba(16,24,40,0.04);
+  }
+  h2 { margin-top: 0; font-size: 1.4rem; }
+  h3 { font-size: 1.05rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: .5rem;}
+  img { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); display: block; margin: .75rem 0 1.25rem; }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 1.25rem;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: .85rem;
+    line-height: 1.5;
+  }
+  code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; }
+  .badge {
+    display: inline-block;
+    background: #eef2ff;
+    color: var(--accent);
+    padding: .15rem .6rem;
+    border-radius: 999px;
+    font-size: .8rem;
+    margin-right: .4rem;
+  }
+  .opinion {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-top: 1rem;
+  }
+  .opinion strong { color: #15803d; }
+  nav.toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+  nav.toc a {
+    color: var(--accent);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    padding: .3rem .8rem;
+    border-radius: 999px;
+    background: var(--panel);
+    font-size: .9rem;
+  }
+  footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 2rem 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PCA for Image Compression</h1>
+  <p>Homework 2 &middot; rank-k image approximations via eigendecomposition of X&prime;X</p>
+  <nav class="toc">
+    <a href="#code">Function</a>
+    <a href="#image1">image1</a>
+    <a href="#image2">image2</a>
+    <a href="#image3">image3</a>
+    <a href="#image4">image4</a>
+  </nav>
+</header>
+
+<main>
+
+  <section class="panel" id="code">
+    <h2>Image Compression Function (R)</h2>
+    <p>
+      Given an image matrix <code>x</code> (n&nbsp;&times;&nbsp;p) and a target rank <code>k</code>, the
+      function below computes <code>V&nbsp;=&nbsp;X&prime;X</code>, eigendecomposes it as
+      <code>V&nbsp;=&nbsp;U&Lambda;U&prime;</code>, forms the PC scores <code>Z&nbsp;=&nbsp;XU</code>, and
+      reconstructs the rank-k approximation as the sum of the first <code>k</code> outer products
+      <code>z<sub>i</sub>u<sub>i</sub>&prime;</code>. Error is the Frobenius norm of the residual.
+    </p>
+    <pre><code>compress_image &lt;- function(x, k) {
+  x &lt;- as.matrix(x)
+  p &lt;- ncol(x)
+
+  if (k &lt; 1 || k &gt; p) stop("k must be between 1 and ncol(x)")
+
+  V   &lt;- t(x) %*% x
+  eig &lt;- eigen(V, symmetric = TRUE)
+  U   &lt;- eig$vectors
+
+  Z &lt;- x %*% U
+
+  Uk &lt;- U[, 1:k, drop = FALSE]
+  Zk &lt;- Z[, 1:k, drop = FALSE]
+  Xk &lt;- Zk %*% t(Uk)
+
+  err &lt;- norm(x - Xk, type = "F")
+
+  list(approx = Xk, error = err)
+}</code></pre>
+  </section>
+
+  <!-- ===================== IMAGE 1 ===================== -->
+  <section class="panel" id="image1">
+    <h2>image1.csv <span class="badge">1000 &times; 100</span></h2>
+
+    <h3>Rank-k approximations, k = 1..10</h3>
+    <img src="assets/image1_grid.png" alt="image1 rank-k approximations">
+
+    <h3>Approximation error vs. k</h3>
+    <img src="assets/image1_error.png" alt="image1 error vs k">
+
+    <h3>First eigenvector &amp; first PC score</h3>
+    <img src="assets/image1_eigen.png" alt="image1 eigenvector and PC score">
+    <p>
+      The first eigenvector is essentially zero everywhere except for one sharp spike around
+      column&nbsp;78 &mdash; it isolates the single bright vertical stripe that runs down the image.
+      The first PC score fluctuates narrowly around a roughly constant value across all 1000 rows,
+      meaning that stripe is present with about the same intensity in every row. Everything else
+      in this image is unstructured pixel-level noise spread fairly evenly across all 100 columns,
+      which is why this one component explains only a small share of the total variance (90% of
+      variance isn't reached until k&nbsp;&asymp;&nbsp;38).
+    </p>
+    <div class="opinion">
+      <strong>Opinion on "good enough" k:</strong> If the goal is to recover the meaningful structure
+      (the stripe), k = 1 already does that — it's captured almost entirely by the first component.
+      But because the rest of the image is essentially random noise, the Frobenius error stays high
+      and keeps improving slowly all the way out to k &asymp; 90&ndash;100, since PCA has to spend
+      additional components chasing noise rather than structure. I'd call k&nbsp;&asymp;&nbsp;1&ndash;2
+      "good enough" for capturing the signal, while acknowledging that full pixel-level fidelity would
+      require k in the 80s or 90s.
+    </div>
+  </section>
+
+  <!-- ===================== IMAGE 2 ===================== -->
+  <section class="panel" id="image2">
+    <h2>image2.csv <span class="badge">1000 &times; 100</span></h2>
+
+    <h3>Rank-k approximations, k = 1..10</h3>
+    <img src="assets/image2_grid.png" alt="image2 rank-k approximations">
+
+    <h3>Approximation error vs. k</h3>
+    <img src="assets/image2_error.png" alt="image2 error vs k">
+
+    <h3>First eigenvector &amp; first PC score</h3>
+    <img src="assets/image2_eigen.png" alt="image2 eigenvector and PC score">
+    <p>
+      The first eigenvector increases smoothly and almost linearly from 0 to about 0.17 across the
+      100 columns — essentially a rank-1 brightness gradient shape. The first PC score varies
+      strongly from row to row (roughly &minus;4000 to 3500), scaling that same gradient up or down
+      for each row. Multiplied together, this single outer product reproduces the horizontal banding
+      pattern visible in the original image: each row is (to first order) just a scaled copy of the
+      same left-to-right gradient.
+    </p>
+    <div class="opinion">
+      <strong>Opinion on "good enough" k:</strong> This image is nearly rank-1 — the first component
+      alone already accounts for &gt;99% of the variance, and the error curve is essentially flat and
+      near zero by k = 2&ndash;3. k = 1 is "good enough" here; nothing meaningful is gained beyond it.
+    </div>
+  </section>
+
+  <!-- ===================== IMAGE 3 ===================== -->
+  <section class="panel" id="image3">
+    <h2>image3.csv <span class="badge">376 &times; 345</span></h2>
+
+    <h3>Rank-k approximations, k = 1..10</h3>
+    <img src="assets/image3_grid.png" alt="image3 rank-k approximations">
+
+    <h3>Approximation error vs. k</h3>
+    <img src="assets/image3_error.png" alt="image3 error vs k">
+
+    <h3>First eigenvector &amp; first PC score</h3>
+    <img src="assets/image3_eigen.png" alt="image3 eigenvector and PC score">
+    <p>
+      This is a natural photograph (a puppy against a light bedsheet). The first eigenvector dips
+      lowest across the middle range of columns — the darker fur and shadow of the puppy's body —
+      and rises back toward the lighter background at the left/right edges. The first PC score
+      rises to its peak across the middle rows, where the puppy is vertically centered in the frame,
+      and drops off toward the top and bottom rows where the lighter background dominates.
+      Together, this first component alone produces the blurry, centered dark blob visible in the
+      k = 1 and k = 2 reconstructions — a coarse "where is the dark subject" summary of the photo.
+    </p>
+    <div class="opinion">
+      <strong>Opinion on "good enough" k:</strong> The subject becomes clearly recognizable by about
+      k = 5&ndash;6 (90% of variance), and by k = 10 the reconstruction is quite close to the original
+      with only fine texture missing. I'd call k&nbsp;&asymp;&nbsp;10&ndash;15 "good enough" for a
+      visually convincing compressed image.
+    </div>
+  </section>
+
+  <!-- ===================== IMAGE 4 ===================== -->
+  <section class="panel" id="image4">
+    <h2>image4.csv <span class="badge">213 &times; 119</span></h2>
+
+    <h3>Rank-k approximations, k = 1..10</h3>
+    <img src="assets/image4_grid.png" alt="image4 rank-k approximations">
+
+    <h3>Approximation error vs. k</h3>
+    <img src="assets/image4_error.png" alt="image4 error vs k">
+
+    <h3>First eigenvector &amp; first PC score</h3>
+    <img src="assets/image4_eigen.png" alt="image4 eigenvector and PC score">
+    <p>
+      This looks like an aerial/satellite crop. The first eigenvector has a strong positive peak
+      around columns 60&ndash;90 and a negative dip near columns 30&ndash;40, roughly separating a
+      bright structure (a rooftop/object) from the surrounding darker vegetation. The first PC score
+      has two pronounced peaks, around rows 60 and rows 140&ndash;150, lining up with the brightest
+      features in the image (the small white object near the top and the bright rectangular marking
+      lower down). This component's outer product is what produces the two bright blobs already
+      visible in the k = 1 reconstruction.
+    </p>
+    <div class="opinion">
+      <strong>Opinion on "good enough" k:</strong> 90% of variance is reached by k = 8 and 95% by
+      k = 11, matching the visual elbow in the error curve. I'd call k&nbsp;&asymp;&nbsp;10&ndash;12
+      "good enough" — the major bright features and terrain contrast are preserved with only fine
+      detail left out.
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  PCA image compression &middot; rank-k approximation X<sub>(k)</sub> = &sum;<sub>i=1..k</sub> z<sub>i</sub>u<sub>i</sub>&prime;
+</footer>
+
+</body>
+</html>
